@@ -71,7 +71,48 @@
     
     //开始下载
     self.dataTask = [self.session dataTaskWithRequest:request];
+    [self resumeTask];
+}
+
+#pragma mark - 事件控制
+
+
+/**
+ 继续下载
+ */
+- (void)resumeTask
+{
     [self.dataTask resume];
+}
+
+
+/**
+ 暂停下载，但是这么写会导致，暂停了几次，想要真正开始下载就得点击开始下载几次
+ 引入状态控制解决这个问题
+ */
+- (void)pauseCurrentTask
+{
+    [self.dataTask suspend];
+}
+
+
+/**
+ 取消下载
+ */
+- (void)cancelCurrentTask
+{
+    [self.session invalidateAndCancel];
+    self.session = nil;
+}
+
+
+/**
+ 取消下载并移除文件
+ */
+- (void)cancelAndClean
+{
+    [self cancelCurrentTask];
+    [ZYFileTool removeFile:self.downloadingPath];
 }
 
 #pragma mark - NSURLSessionDataDelegate
@@ -135,6 +176,7 @@
  */
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
 {
+    NSLog(@"正在下载");
     [self.output write:data.bytes maxLength:data.length];
 }
 

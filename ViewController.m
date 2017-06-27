@@ -7,23 +7,45 @@
 //
 
 #import "ViewController.h"
+#import "ZYDownloader.h"
 
 @interface ViewController ()
-
+@property (nonatomic, strong) ZYDownloader *downLoader;
 @end
 
 @implementation ViewController
 
+- (ZYDownloader *)downLoader {
+    if (!_downLoader) {
+        _downLoader = [ZYDownloader new];
+    }
+    return _downLoader;
+}
+
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
+    
+    
+    
+    
+    
 }
 
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+- (IBAction)download:(id)sender {
+    NSURL *url = [NSURL URLWithString:@"https://codeload.github.com/BradLarson/GPUImage/zip/master"];
+    [self.downLoader downloadWithUrl:url];
 }
+- (IBAction)pause:(id)sender {
+    [self.downLoader pauseCurrentTask];
+}
+- (IBAction)cancel:(id)sender {
+    [self.downLoader cancelCurrentTask];
+}
+- (IBAction)cancelClean:(id)sender {
+    [self.downLoader cancelCurrentTask];
+}
+
 
 
 @end
