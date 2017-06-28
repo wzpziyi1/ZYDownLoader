@@ -38,12 +38,19 @@ typedef void(^DownLoadFailedBlock)();
 
 - (void)downloadWithUrl:(NSURL *)url downloadInfo:(DownloadInfoBlock)downloadInfo downloadProgress:(DownloadProgressBlock)downloadProgress success:(DownLoadSuccessBlock)success failed:(DownLoadFailedBlock)failed;
 
+
+
 /**
  下载文件，如果任务已经存在，则继续下载
  */
 - (void)downloadWithUrl:(NSURL *)url;
 
 
+
+/**
+ 继续下载or开始下载
+ */
+- (void)resumeTask;
 /**
  暂停下载
  */
