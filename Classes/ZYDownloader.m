@@ -20,7 +20,7 @@
     long long _tmpSize;
 }
 @property (nonatomic, strong) NSURLSession *session;
-@property (nonatomic, strong) NSURLSessionDataTask *dataTask;
+@property (nonatomic, weak) NSURLSessionDataTask *dataTask;
 
 //下载状态路径
 @property (nonatomic, copy) NSString *downloadedPath;
@@ -28,6 +28,8 @@
 
 //输出流
 @property (nonatomic, strong) NSOutputStream *output;
+
+@property (nonatomic, assign, readwrite) ZYDownloaderState state;
 @end
 
 @implementation ZYDownloader
@@ -37,7 +39,9 @@
     //判断是否已经在下载中了
     if ([url isEqual:self.dataTask.originalRequest.URL])
     {
-        
+        //如果在暂停状态，就开始下载即可
+        [self resumeTask];
+        return;
     }
     
     //读取路径(路径+文件名)
@@ -48,6 +52,7 @@
     if ([ZYFileTool fileExist:self.downloadedPath])
     {
         NSLog(@"文件已经下载完成");
+        self.state = ZYDownloaderStateSuccess;
         return;
     }
     
@@ -74,15 +79,19 @@
     [self resumeTask];
 }
 
-#pragma mark - 事件控制
-
+#pragma mark - 事件\状态控制
 
 /**
  继续下载
  */
 - (void)resumeTask
 {
-    [self.dataTask resume];
+    if (self.state == ZYDownloaderStatePause && self.dataTask)
+    {
+        [self.dataTask resume];
+        self.state = ZYDownloaderStateDownloading;
+    }
+    
 }
 
 
@@ -92,7 +101,12 @@
  */
 - (void)pauseCurrentTask
 {
-    [self.dataTask suspend];
+    if (self.state == ZYDownloaderStateDownloading)
+    {
+        [self.dataTask suspend];
+        self.state = ZYDownloaderStatePause;
+    }
+    
 }
 
 
@@ -101,8 +115,10 @@
  */
 - (void)cancelCurrentTask
 {
+    self.state = ZYDownloaderStatePause;
     [self.session invalidateAndCancel];
     self.session = nil;
+    self.dataTask = nil;
 }
 
 
@@ -147,6 +163,7 @@
     {
         [ZYFileTool moveFileFromPath:self.downloadingPath ToPath:self.downloadedPath];
         completionHandler(NSURLSessionResponseCancel);
+        self.state = ZYDownloaderStateSuccess;
         return;
     }
     
@@ -164,7 +181,7 @@
         
         return;
     }
-    
+    self.state = ZYDownloaderStateDownloading;
     self.output = [NSOutputStream outputStreamToFileAtPath:self.downloadingPath append:YES];
     [self.output open];
     completionHandler(NSURLSessionResponseAllow);
@@ -186,19 +203,33 @@
     if (error == nil)
     {
         /*
-         没错误并不代表文件真的无错误
+         没错误并不代表文件真的请求完毕
          需要判断文件大小
          最好的是判断文件的md5值
          */
+        [ZYFileTool moveFileFromPath:self.downloadingPath ToPath:self.downloadedPath];
+        self.state = ZYDownloaderStateSuccess;
     }
     else
     {
-        NSLog(@"有错误");
+        NSLog(@"Error:%d, %@", (int)error.code, error.description);
+        
+        
+        //可以利用error做断网判断，这里做的是手动取消与无网络的判断
+        if (error.code == -999 || error.code == -1005)
+        {
+            self.state = ZYDownloaderStatePause;
+        }
+        else
+        {
+            self.state = ZYDownloaderStateFailed;
+        }
+        
     }
     [self.output close];
 }
 
-#pragma mark - 懒加载
+#pragma mark - getter && setter
 
 - (NSURLSession *)session
 {
@@ -208,6 +239,13 @@
         _session = [NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:[NSOperationQueue mainQueue]];
     }
     return _session;
+}
+
+- (void)setState:(ZYDownloaderState)state
+{
+    if (_state == state) return;
+    
+    _state = state;
 }
 
 @end

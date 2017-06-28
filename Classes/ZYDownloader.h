@@ -10,7 +10,17 @@
 
 #import <Foundation/Foundation.h>
 
+typedef NS_ENUM(NSInteger, ZYDownloaderState) {
+    ZYDownloaderStatePause,
+    ZYDownloaderStateDownloading,
+    ZYDownloaderStateSuccess,
+    ZYDownloaderStateFailed
+};
+
 @interface ZYDownloader : NSObject
+
+
+@property (nonatomic, assign, readonly) ZYDownloaderState state;
 
 /**
  下载文件，如果任务已经存在，则继续下载
