@@ -7,20 +7,13 @@
 //
 
 #import "ViewController.h"
-#import "ZYDownloader.h"
+#import "ZYDownloadManager.h"
 
 @interface ViewController ()
-@property (nonatomic, strong) ZYDownloader *downLoader;
 @end
 
 @implementation ViewController
 
-- (ZYDownloader *)downLoader {
-    if (!_downLoader) {
-        _downLoader = [ZYDownloader new];
-    }
-    return _downLoader;
-}
 
 
 - (void)viewDidLoad {
@@ -33,17 +26,45 @@
 }
 
 - (IBAction)download:(id)sender {
-    NSURL *url = [NSURL URLWithString:@"https://codeload.github.com/BradLarson/GPUImage/zip/master"];
-    [self.downLoader downloadWithUrl:url];
+    
+    NSURL *url = [NSURL URLWithString:@"http://sw.bos.baidu.com/sw-search-sp/software/a974c8ed7c9/dd_mac_1.9.1.dmg"];
+    
+    NSURL *url2 = [NSURL URLWithString:@"https://dl.devmate.com/com.macpaw.CleanMyMac2/CleanMyMac2.dmg"];
+    
+    
+    [[ZYDownloadManager sharedInstance] downloadWithUrl:url downloadInfo:^(long long totalSize) {
+        NSLog(@"1下载信息--%lld", totalSize);
+    } downloadProgress:^(float progress) {
+        NSLog(@"1下载进度--%f", progress);
+    } success:^(NSString *filePath) {
+        NSLog(@"1下载成功--路径:%@", filePath);
+    } failed:^{
+        NSLog(@"1下载失败了");
+    }];
+    
+    [[ZYDownloadManager sharedInstance] downloadWithUrl:url2 downloadInfo:^(long long totalSize) {
+        NSLog(@"2下载信息--%lld", totalSize);
+    } downloadProgress:^(float progress) {
+        NSLog(@"2下载进度--%f", progress);
+    } success:^(NSString *filePath) {
+        NSLog(@"2下载成功--路径:%@", filePath);
+    } failed:^{
+        NSLog(@"2下载失败了");
+    }];
+    
+    
+    
+//    NSURL *url = [NSURL URLWithString:@"https://codeload.github.com/BradLarson/GPUImage/zip/master"];
+//    [self.downLoader downloadWithUrl:url];
 }
 - (IBAction)pause:(id)sender {
-    [self.downLoader pauseCurrentTask];
+//    [self.downLoader pauseCurrentTask];
 }
 - (IBAction)cancel:(id)sender {
-    [self.downLoader cancelCurrentTask];
+//    [self.downLoader cancelCurrentTask];
 }
 - (IBAction)cancelClean:(id)sender {
-    [self.downLoader cancelCurrentTask];
+//    [self.downLoader cancelCurrentTask];
 }
 
 
