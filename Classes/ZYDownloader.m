@@ -30,9 +30,19 @@
 @property (nonatomic, strong) NSOutputStream *output;
 
 @property (nonatomic, assign, readwrite) ZYDownloaderState state;
+@property (nonatomic, assign, readwrite) float progress;
 @end
 
 @implementation ZYDownloader
+
+- (void)downloadWithUrl:(NSURL *)url downloadInfo:(DownloadInfoBlock)downloadInfo downloadProgress:(DownloadProgressBlock)downloadProgress success:(DownLoadSuccessBlock)success failed:(DownLoadFailedBlock)failed
+{
+    self.downloadInfo = downloadInfo;
+    self.downloadProgress = downloadProgress;
+    self.downloadSuccess = success;
+    self.downloadFailed = failed;
+    [self downloadWithUrl:url];
+}
 
 - (void)downloadWithUrl:(NSURL *)url
 {
@@ -44,6 +54,7 @@
         return;
     }
     
+    self.progress = 0;
     //读取路径(路径+文件名)
     self.downloadedPath = [kCachePath stringByAppendingPathComponent:url.lastPathComponent];
     self.downloadingPath = [kTmpPath stringByAppendingPathComponent:url.lastPathComponent];
@@ -153,6 +164,11 @@
      */
     _totalSize = [httpResponse.allHeaderFields[@"Content-Length"] longLongValue];
     
+    if (self.downloadInfo)
+    {
+        self.downloadInfo(_totalSize);
+    }
+    
     NSString *contentRangeStr = httpResponse.allHeaderFields[@"Content-Range"];
     if (contentRangeStr.length != 0) {
         _totalSize = [[contentRangeStr componentsSeparatedByString:@"/"].lastObject longLongValue];
@@ -161,6 +177,7 @@
     //如果文件大小一致，那么说明文件下载完毕，将文件从tmp目录移动到cache目录下
     if (_tmpSize == _totalSize)
     {
+        self.progress = 1.0 * _tmpSize / _totalSize;
         [ZYFileTool moveFileFromPath:self.downloadingPath ToPath:self.downloadedPath];
         completionHandler(NSURLSessionResponseCancel);
         self.state = ZYDownloaderStateSuccess;
@@ -195,6 +212,8 @@
 {
     NSLog(@"正在下载");
     [self.output write:data.bytes maxLength:data.length];
+    _tmpSize += data.length;
+    self.progress = 1.0 * _tmpSize / _totalSize;
 }
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error
@@ -246,6 +265,31 @@
     if (_state == state) return;
     
     _state = state;
+    
+    if (self.stateChange)
+    {
+        self.stateChange(_state);
+    }
+    
+    if (_state == ZYDownloaderStateSuccess && self.downloadSuccess)
+    {
+        self.downloadSuccess(self.downloadedPath);
+    }
+    
+    if (_state == ZYDownloaderStateFailed && self.downloadFailed)
+    {
+        self.downloadFailed();
+    }
+}
+
+- (void)setProgress:(float)progress
+{
+    _progress = progress;
+    
+    if (self.downloadProgress)
+    {
+        self.downloadProgress(_progress);
+    }
 }
 
 @end

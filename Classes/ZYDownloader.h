@@ -17,10 +17,26 @@ typedef NS_ENUM(NSInteger, ZYDownloaderState) {
     ZYDownloaderStateFailed
 };
 
+typedef void(^DownloadInfoBlock)(long long totalSize);
+typedef void(^DownloadProgressBlock)(float progress);
+typedef void(^DownLoadStateChangeBlock)(ZYDownloaderState state);
+typedef void(^DownLoadSuccessBlock)(NSString *filePath);
+typedef void(^DownLoadFailedBlock)();
+
 @interface ZYDownloader : NSObject
 
 
+@property (nonatomic, assign, readonly) float progress;
 @property (nonatomic, assign, readonly) ZYDownloaderState state;
+
+
+@property (nonatomic, copy) DownloadInfoBlock downloadInfo;
+@property (nonatomic, copy) DownloadProgressBlock downloadProgress;
+@property (nonatomic, copy) DownLoadStateChangeBlock stateChange;
+@property (nonatomic, copy) DownLoadSuccessBlock downloadSuccess;
+@property (nonatomic, copy) DownLoadFailedBlock downloadFailed;
+
+- (void)downloadWithUrl:(NSURL *)url downloadInfo:(DownloadInfoBlock)downloadInfo downloadProgress:(DownloadProgressBlock)downloadProgress success:(DownLoadSuccessBlock)success failed:(DownLoadFailedBlock)failed;
 
 /**
  下载文件，如果任务已经存在，则继续下载
